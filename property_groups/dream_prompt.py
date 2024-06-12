@@ -125,7 +125,7 @@ attributes = {
     "seed": StringProperty(name="Seed", default="0", description="Manually pick a seed", update=seed_clamp),
     "iterations": IntProperty(name="Iterations", default=1, min=1, description="How many images to generate"),
     "steps": IntProperty(name="Steps", default=25, min=1),
-    "cfg_scale": FloatProperty(name="CFG Scale", default=7.5, min=1, soft_min=1.01, description="How strongly the prompt influences the image"),
+    "cfg_scale": FloatProperty(name="CFG Scale", default=7.5, min=0, description="How strongly the prompt influences the image"),
     "scheduler": EnumProperty(name="Scheduler", items=scheduler_options, default=3), # defaults to "DPM Solver Multistep"
     "step_preview_mode": EnumProperty(name="Step Preview", description="Displays intermediate steps in the Image Viewer. Disabling can speed up generation", items=step_preview_mode_options, default=1),
 
@@ -264,7 +264,7 @@ def generate_args(self, context, iteration=0, init_image=None, control_images=No
 
     return api.GenerationArguments(
         task=task,
-        model=next(model for model in self.get_backend().list_models(context) if model is not None and model.id == self.model),
+        model=next((model for model in self.get_backend().list_models(context) if model is not None and model.id == self.model), None),
         prompt=api.Prompt(
             file_batch_lines[iteration:iteration+batch_size] if is_file_batch else [self.generate_prompt()] * batch_size,
             file_batch_lines_negative[iteration:iteration+batch_size] if is_file_batch else ([self.negative_prompt] * batch_size if self.use_negative_prompt else None)
@@ -284,6 +284,7 @@ def generate_args(self, context, iteration=0, init_image=None, control_images=No
                 net.conditioning_scale
             )
             for i, net in enumerate(self.control_nets)
+            if net.enabled
         ]
     )
 
